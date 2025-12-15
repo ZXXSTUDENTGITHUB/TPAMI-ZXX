@@ -31,7 +31,8 @@ def load_ckpt(dataset, datadir):
         return {'model_state': None}
 
 def get_nodes_explained(dataset, A_np):
-    node_list = np.arange(10)
+    num_nodes = A_np.shape[0]
+    node_list = np.arange(min(10, num_nodes))
     k = 5
     return node_list, k
 
