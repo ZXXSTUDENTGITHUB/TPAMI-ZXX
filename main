@@ -60,35 +60,6 @@ class TeacherGCN(nn.Module):
     def get_intermediate_features(self):
         return self.intermediate_features
 
-class LayerwiseDistillationLoss(nn.Module):
-    def __init__(self, temp=3.0):
-        super().__init__()
-        self.temp = temp
-        self.mse = nn.MSELoss()
-        self.kl_div = nn.KLDivLoss(reduction='batchmean')
-
-    def forward(self, student_output, teacher_output, student_intermediate, teacher_intermediate, labels=None):
-        t_out_soft = F.softmax(teacher_output / self.temp, dim=1)
-        s_out_soft = F.log_softmax(student_output / self.temp, dim=1)
-        kl_loss = self.kl_div(s_out_soft, t_out_soft) * (self.temp ** 2)
-
-        layer_loss = 0.0
-        layer_count = 0
-        for key in teacher_intermediate.keys():
-            if key in student_intermediate:
-                s_feat = student_intermediate[key]
-                t_feat = teacher_intermediate[key]
-                layer_loss += self.mse(s_feat, t_feat)
-                layer_count += 1
-        layer_loss = layer_loss / layer_count if layer_count > 0 else 0.0
-
-        task_loss = 0.0
-        if labels is not None:
-            task_loss = F.cross_entropy(student_output, labels)
-
-        total_loss = 0.3 * task_loss + 0.4 * kl_loss + 0.3 * layer_loss
-        return total_loss
-
 class SSGCStudent(nn.Module):
     def __init__(self, k, nfeat, nclass):
         super(SSGCStudent, self).__init__()
